@@ -21,7 +21,7 @@ import {
   Trash2,
   Bell
 } from 'lucide-react';
-import { DispatchRecord, DeliveryType, DispatchStatus, ForwardingDispatchNotification } from '../types';
+import { DispatchRecord, DeliveryType, DispatchStatus, ForwardingDispatchNotification, ClientSummary } from '../types';
 import { MilitaryTimeInput } from './MilitaryTimeInput';
 import { formatTo12HourTime, formatTo24HourTime, formatDualTimeDisplay, parseAndConvertMilitaryTime } from '../utils/timeUtils';
 import { ForwardingDispatchNotificationPanel } from './ForwardingDispatchNotificationPanel';
@@ -35,6 +35,7 @@ interface DailyDispatchViewProps {
   dispatchNotifications?: ForwardingDispatchNotification[];
   onCompleteDispatchNotification?: (notification: ForwardingDispatchNotification) => void;
   onDismissDispatchNotification?: (notificationId: string) => void;
+  clients?: ClientSummary[];
 }
 
 export const DailyDispatchView: React.FC<DailyDispatchViewProps> = ({
@@ -46,6 +47,7 @@ export const DailyDispatchView: React.FC<DailyDispatchViewProps> = ({
   dispatchNotifications = [],
   onCompleteDispatchNotification,
   onDismissDispatchNotification,
+  clients = [],
 }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editDraft, setEditDraft] = useState<Record<string, DispatchRecord>>({});
@@ -569,14 +571,27 @@ export const DailyDispatchView: React.FC<DailyDispatchViewProps> = ({
 
                         {/* 11. Action / View Details */}
                         <td className="py-2 px-2.5 text-center">
-                          <button
-                            type="button"
-                            onClick={() => onSelectDispatch(currentRecord)}
-                            className="text-xs text-blue-700 hover:text-blue-900 font-semibold inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50 cursor-pointer"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Timeline</span>
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => onSelectDispatch(currentRecord)}
+                              className="text-xs text-blue-700 hover:text-blue-900 font-semibold inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50 cursor-pointer"
+                              title="View Timeline Breakdown"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Timeline</span>
+                            </button>
+                            {onRequestDeleteDispatch && (
+                              <button
+                                type="button"
+                                onClick={() => onRequestDeleteDispatch(currentRecord)}
+                                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                                title="Move to Trash"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -645,10 +660,25 @@ export const DailyDispatchView: React.FC<DailyDispatchViewProps> = ({
 
                       {/* 11. Action */}
                       <td className="py-2.5 px-3 text-center">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 group-hover:text-blue-900 bg-blue-50/80 group-hover:bg-blue-100 px-2 py-1 rounded transition-colors">
-                          <Eye className="w-3 h-3" />
-                          <span>Details</span>
-                        </span>
+                        <div className="flex items-center justify-center gap-1">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 group-hover:text-blue-900 bg-blue-50/80 group-hover:bg-blue-100 px-2 py-1 rounded transition-colors">
+                            <Eye className="w-3 h-3" />
+                            <span>Details</span>
+                          </span>
+                          {onRequestDeleteDispatch && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRequestDeleteDispatch(record);
+                              }}
+                              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                              title="Move to Trash"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

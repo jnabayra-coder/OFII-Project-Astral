@@ -662,6 +662,37 @@ export default function App() {
     setDispatches(updated);
   };
 
+  // Handle Save Single Dispatch from Details Modal
+  const handleSaveSingleDispatch = (updatedDispatch: DispatchRecord) => {
+    setDispatches(prev => prev.map(d => d.id === updatedDispatch.id ? updatedDispatch : d));
+    setSelectedDispatch(updatedDispatch);
+
+    // Synchronize with Client Shipment Monitoring
+    setShipments(prev => prev.map(s => {
+      if (s.podNumber === updatedDispatch.podNumber || s.manifestNumber === updatedDispatch.manifestNumber) {
+        return {
+          ...s,
+          truckPlate: updatedDispatch.plateNumber,
+          destination: updatedDispatch.destination,
+          consignee: updatedDispatch.consignee,
+          quantityBoxes: updatedDispatch.quantityCasesBoxes,
+          status: mapDispatchStatusToShipmentStatus(updatedDispatch.status),
+          plannedDeliveryDate: updatedDispatch.plannedDeliveryDate,
+          actualDeliveryDate: updatedDispatch.status === 'Delivered' ? updatedDispatch.plannedDeliveryDate : s.actualDeliveryDate,
+          deliveryDate: updatedDispatch.status === 'Delivered' ? updatedDispatch.plannedDeliveryDate : s.deliveryDate,
+          actualDeparture: `${updatedDispatch.deliveryDate} ${updatedDispatch.departureTime || ''}`.trim(),
+        };
+      }
+      return s;
+    }));
+
+    setConfirmationToast({
+      message: 'Dispatch record updated.',
+      subtext: `Changes saved for POD ${updatedDispatch.podNumber} and synchronized across monitoring modules.`
+    });
+    setTimeout(() => setConfirmationToast(null), 4000);
+  };
+
   // Handle Updates in Client Shipment
   const handleUpdateShipment = (updatedShipment: ShipmentRecord) => {
     setShipments(prev => prev.map(s => s.id === updatedShipment.id ? updatedShipment : s));
@@ -924,9 +955,22 @@ export default function App() {
             {/* TAB 1: DASHBOARD */}
             {currentTab === 'dashboard' && (
               <DashboardView
-                summary={dashboardSummaryData}
-                recentDispatches={dispatches.filter(d => !d.isDeleted)}
+                dispatches={dispatches}
+                shipments={shipments}
+                forwardingRecords={forwardingRecords}
+                clients={clients}
+                dispatchNotifications={dispatchNotifications}
                 onSelectDispatch={setSelectedDispatch}
+                onSelectShipment={(shipment) => {
+                  setSelectedShipment(shipment);
+                  setSelectedClientId(shipment.clientId || null);
+                  setCurrentTab('clients');
+                }}
+                onSelectForwardingRecord={(rec) => {
+                  setSelectedForwardingRecord(rec);
+                  setIsForwardingDetailEditMode(false);
+                  setCurrentTab('forwarding_report');
+                }}
                 onNavigate={handleNavigate}
                 onSelectClientFromDashboard={handleSelectClientFromDashboard}
               />
@@ -946,6 +990,7 @@ export default function App() {
                 dispatchNotifications={dispatchNotifications}
                 onCompleteDispatchNotification={handleCompleteDispatchFromNotification}
                 onDismissDispatchNotification={handleDismissDispatchNotification}
+                clients={clients}
               />
             )}
 
@@ -1069,6 +1114,7 @@ export default function App() {
           dispatch={selectedDispatch}
           onClose={() => setSelectedDispatch(null)}
           onSelectClient={handleSelectClientFromDashboard}
+          onSaveDispatch={handleSaveSingleDispatch}
           onRequestDelete={handleRequestDeleteDispatch}
           clients={clients}
         />
